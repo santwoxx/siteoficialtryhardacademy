@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: leads
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (optional, max 100 chars)
+    //   - email: string (required, email format)
+    //   - whatsapp: string (required, min 10 chars)
+    //   - createdAt: timestamp (required)
+    //   - source: string (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "santwomusic@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidLead(data) {
+      return data.keys().hasAll(['email', 'whatsapp', 'createdAt']) &&
+             data.email is string && isValidEmail(data.email) &&
+             data.whatsapp is string && data.whatsapp.size() >= 10 && data.whatsapp.size() <= 20 &&
+             data.createdAt is timestamp &&
+             (!('name' in data) || (data.name is string && data.name.size() <= 100)) &&
+             (!('source' in data) || (data.source is string && data.source.size() <= 50));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /leads/{leadId} {
+      // Allow anyone to submit a lead, but with strict validation
+      allow create: if isValidLead(request.resource.data);
+      
+      // Only admins can read, update or delete leads
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+    }
+  }
+}
