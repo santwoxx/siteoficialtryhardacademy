@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "User information collected for remarketing purposes.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the user."
+        },
+        "whatsapp": {
+          "type": "string",
+          "description": "WhatsApp number of the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the lead was created."
+        },
+        "source": {
+          "type": "string",
+          "description": "Source of the lead (e.g., 'landing_page_popup')."
+        }
+      },
+      "required": ["email", "whatsapp", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Collection of user leads for marketing."
+    }
+  }
+}
